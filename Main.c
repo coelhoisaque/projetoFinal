@@ -22,6 +22,8 @@
 #define BUTTON_A 5
 #define BUTTON_B 6
 #define DEBOUNCE_TIME 200000 // 200ms em microssegundos
+// LED interno do Pico W
+#define LED_PIN 25
 
 // Variáveis globais
 static volatile uint8_t medication_count = 0;
@@ -36,11 +38,14 @@ static inline uint32_t urgb_u32(uint8_t r, uint8_t g, uint8_t b) {
 
 // Atualiza o buffer de LEDs com base na contagem de medicamentos
 void update_led_buffer() {
-    for (int i = 0; i < NUM_PIXELS; i++) {
-        if (i < medication_count) {
-            led_buffer[i] = urgb_u32(BRIGHTNESS, BRIGHTNESS, BRIGHTNESS); // Branco
-        } else {
-            led_buffer[i] = 0; // Desligado
+    for (int y = 0; y < 5; y++) {
+        for (int x = 0; x < 5; x++) {
+            int idx = y * 5 + (y % 2 == 0 ? x : 4 - x); // Zig-zag
+            if (idx < medication_count) {
+                led_buffer[idx] = urgb_u32(BRIGHTNESS, BRIGHTNESS, BRIGHTNESS); // Branco
+            } else {
+                led_buffer[idx] = 0; // Desligado
+            }
         }
     }
 }
@@ -103,30 +108,63 @@ void update_display() {
 
 int main() {
     stdio_init_all();
+    printf("Iniciando SmartMedBox...\n");
+    
+    // Inicialização do LED interno
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_put(LED_PIN, 1); // Liga o LED para indicar inicialização
+    printf("[OK] LED interno inicializado\n");
+    sleep_ms(2000);
+    gpio_put(LED_PIN, 0); // Desliga o LED
     
     // Inicialização do WS2812
     PIO pio = pio0;
     int sm = 0;
     uint offset = pio_add_program(pio, &ws2812_program);
+    if(offset == 0xFFFFFFFF) {
+        printf("[ERRO] Falha ao carregar programa PIO!\n");
+        while(1);
+    }
+    printf("[OK] Programa PIO carregado (offset: %d)\n", offset);
     ws2812_program_init(pio, sm, offset, WS2812_PIN, 800000, false);
+
+    // Teste direto dos LEDs
+    pio_sm_put_blocking(pio, sm, urgb_u32(32,0,0)); // Vermelho
+    printf("[TESTE] LEDs devem estar VERMELHOS\n");
+    sleep_ms(2000);
     
     // Configuração dos botões
     gpio_init(BUTTON_A);
     gpio_set_dir(BUTTON_A, GPIO_IN);
     gpio_pull_up(BUTTON_A);
-    gpio_set_irq_enabled(BUTTON_A, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(BUTTON_A, GPIO_IRQ_EDGE_RISE, true);
     
     gpio_init(BUTTON_B);
     gpio_set_dir(BUTTON_B, GPIO_IN);
     gpio_pull_up(BUTTON_B);
-    gpio_set_irq_enabled(BUTTON_B, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled(BUTTON_B, GPIO_IRQ_EDGE_RISE, true);
     
     // Configuração das interrupções
-    gpio_set_irq_callback(gpio_irq_handler);
+    gpio_set_irq_enabled_with_callback(BUTTON_A, GPIO_IRQ_EDGE_RISE, true, &gpio_irq_handler);
+    gpio_set_irq_enabled_with_callback(BUTTON_B, GPIO_IRQ_EDGE_RISE, true, &gpio_irq_handler);
     irq_set_enabled(IO_IRQ_BANK0, true);
     
     // Inicialização do display
     setup_display();
+
+    ssd1306_draw_string(&ssd, "TESTE OLED", 10, 10);
+    ssd1306_send_data(&ssd);
+    printf("[TESTE] Display deve mostrar 'TESTE OLED'\n");
+    sleep_ms(2000);
+
+
+    // Teste inicial dos LEDs
+    for (int i = 0; i < NUM_PIXELS; i++) {
+        led_buffer[i] = urgb_u32(32, 0, 0); // Vermelho
+    }
+    set_leds_from_buffer(pio, sm);
+    sleep_ms(1000); // LEDs devem acender vermelhos
     
     while (true) {
         // Atualiza a matriz de LEDs
@@ -138,6 +176,12 @@ int main() {
             update_display();
             last_display_update = to_ms_since_boot(get_absolute_time());
         }
+
+         // Pisca o LED interno para indicar atividade
+         gpio_put(LED_PIN, 1);
+         sleep_ms(100);
+         gpio_put(LED_PIN, 0);
+         sleep_ms(100);
     }
     
     return 0;
