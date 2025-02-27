@@ -4,10 +4,10 @@
 #include "hardware/clocks.h"
 #include "generated/ws2812.pio.h"
 #include "hardware/i2c.h"
-#include "inc/ssd1306.h"  
+#include "inc/ssd1306.h"
 
 // Configurações do sistema
-#define LED_PIN     12
+#define LED_PIN     13 // 11 12 e 13
 #define NUM_PIXELS  25
 #define WS2812_PIN  7
 #define BRIGHTNESS  32
@@ -19,7 +19,7 @@
 #define BUTTON_B    6
 #define DEBOUNCE_MS 250
 
-// Mapeamento da matriz 5x5
+// Mapeamento físico da matriz 5x5 em zig-zag
 const uint8_t LED_MAP[NUM_PIXELS] = {
     0,  1,  2,  3,  4,
     9,  8,  7,  6,  5,
@@ -28,193 +28,32 @@ const uint8_t LED_MAP[NUM_PIXELS] = {
     20, 21, 22, 23, 24
 };
 
-const uint8_t num_0[NUM_PIXELS] = {    0, 0, 0, 0, 0,  0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0};
-
-const uint8_t num_1[NUM_PIXELS] = {    1, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0,    0, 0, 0, 0, 0};
-
-const uint8_t num_2[NUM_PIXELS] = {
-    1, 1, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_3[NUM_PIXELS] = {
-    1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_4[NUM_PIXELS] = {
-    1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_5[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_6[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_7[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_8[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_9[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_10[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_11[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_12[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_13[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_14[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_15[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_16[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_17[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_18[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 0, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_19[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_20[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    0, 0, 0, 0, 0
-};
-
-const uint8_t num_21[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0
-};
-
-const uint8_t num_22[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 0, 0, 0
-};
-
-const uint8_t num_23[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 0, 0
-};
-
-const uint8_t num_24[NUM_PIXELS] = {
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1
-};
+// Padrões pré-definidos para números (0-24)
+const uint8_t num_0[NUM_PIXELS] = {0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_1[NUM_PIXELS] = {1,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_2[NUM_PIXELS] = {1,1,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_3[NUM_PIXELS] = {1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_4[NUM_PIXELS] = {1,1,1,1,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_5[NUM_PIXELS] = {1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_6[NUM_PIXELS] = {1,1,1,1,1, 1,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_7[NUM_PIXELS] = {1,1,1,1,1, 1,1,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_8[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_9[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_10[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_11[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_12[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,0,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_13[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,0,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_14[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,0, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_15[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 0,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_16[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,0,0,0,0, 0,0,0,0,0};
+const uint8_t num_17[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,0,0,0, 0,0,0,0,0};
+const uint8_t num_18[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,0,0, 0,0,0,0,0};
+const uint8_t num_19[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,0, 0,0,0,0,0};
+const uint8_t num_20[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 0,0,0,0,0};
+const uint8_t num_21[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,0,0,0,0};
+const uint8_t num_22[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,0,0,0};
+const uint8_t num_23[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,0,0};
+const uint8_t num_24[NUM_PIXELS] = {1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1, 1,1,1,1,1};
 
 // Array de padrões
 const uint8_t *number_patterns[] = {
@@ -238,35 +77,21 @@ static inline uint32_t rgb_to_grb(uint8_t r, uint8_t g, uint8_t b) {
     return (g << 24) | (r << 16) | (b << 8);
 }
 
-// Atualiza buffer de LEDs
+// Atualiza buffer de LEDs com padrão atual
 void update_leds() {
     const uint8_t *current_pattern = number_patterns[med_count];
-    for(uint8_t i = 0; i < NUM_PIXELS; i++) {
-        led_buffer[LED_MAP[i]] = current_pattern[i] ? 
+    for(uint8_t logical_i = 0; logical_i < NUM_PIXELS; logical_i++) {
+        uint8_t physical_i = LED_MAP[logical_i];
+        led_buffer[physical_i] = current_pattern[logical_i] ? 
             rgb_to_grb(BRIGHTNESS, BRIGHTNESS, BRIGHTNESS) : 0;
     }
 }
 
-// Handler de interrupção para botões
-void button_isr(uint gpio, uint32_t events) {
-    uint32_t now = time_us_32();
-    if((now - last_isr_time) < DEBOUNCE_MS * 1000) return;
-    
-    last_isr_time = now;
-    
-    if(gpio == BUTTON_A && med_count > 0) {
-        med_count--;
-    } else if(gpio == BUTTON_B && med_count < 24) { // 25 padrões (0-24)
-        med_count++;
-    }
-    
-    update_leds();
-}
-
-// Envia dados para LEDs
+// Envia dados para os LEDs
 void send_leds() {
     for(uint8_t i = 0; i < NUM_PIXELS; i++) {
         pio_sm_put_blocking(ws_pio, ws_sm, led_buffer[i]);
+        sleep_us(35);  // Timing crítico para WS2812
     }
 }
 
@@ -278,12 +103,12 @@ void button_isr(uint gpio, uint32_t events) {
     last_isr_time = now;
     
     if(gpio == BUTTON_A && med_count > 0) med_count--;
-    if(gpio == BUTTON_B && med_count < NUM_PIXELS) med_count++;
+    if(gpio == BUTTON_B && med_count < 24) med_count++;  // 25 padrões (0-24)
     
     update_leds();
 }
 
-// Inicialização do display OLED (corrigida)
+// Inicialização do display OLED
 void init_display() {
     i2c_init(I2C_PORT, 400000);
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
@@ -291,15 +116,10 @@ void init_display() {
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
     
-    // Parâmetros corrigidos para ssd1306_init
     ssd1306_init(&oled, 128, 64, false, OLED_ADDR, I2C_PORT);
-    
-    // Limpa o display
     ssd1306_fill(&oled, false);
-    
-    // Desenha texto (parâmetros ajustados)
     ssd1306_draw_string(&oled, "Sistema Pronto", 0, 0);
-    ssd1306_send_data(&oled);  // Atualiza o display
+    ssd1306_send_data(&oled);
 }
 
 int main() {
@@ -331,7 +151,7 @@ int main() {
     // Inicializa display
     init_display();
     
-    // Teste de LEDs
+    // Teste inicial de LEDs
     for(uint8_t i = 0; i < NUM_PIXELS; i++) {
         led_buffer[i] = rgb_to_grb(32, 0, 0);
         send_leds();
@@ -354,7 +174,7 @@ int main() {
         static uint32_t last_update = 0;
         if(absolute_time_diff_us(last_update, get_absolute_time()) > 500000) {
             char status[32];
-            snprintf(status, sizeof(status), "Medicamentos: %02d", med_count);
+            snprintf(status, sizeof(status), "Medicamentos: %02d", med_count + 1);  // Mostra 1-25
             
             ssd1306_fill(&oled, false);
             ssd1306_draw_string(&oled, "SmartMedBox", 0, 0);
