@@ -1,17 +1,18 @@
-#include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "generated/ws2812.pio.h"
 #include "hardware/i2c.h"
 #include "inc/ssd1306.h"
+#include <string.h>  
+#include <stdio.h>  
 
 // Configurações do sistema
-#define LED_PIN     13 // 11 12 e 13
+#define LED_PIN     13
 #define NUM_PIXELS  25
 #define WS2812_PIN  7
 #define BRIGHTNESS  32
-#define I2C_PORT    i2c0
+#define I2C_PORT    i2c1
 #define I2C_SDA     14
 #define I2C_SCL     15
 #define OLED_ADDR   0x3C
@@ -66,6 +67,7 @@ const uint8_t *number_patterns[] = {
 
 // Variáveis globais
 static volatile uint8_t med_count = 0;
+static volatile uint8_t led_count = 0;
 static volatile uint32_t last_isr_time = 0;
 uint32_t led_buffer[NUM_PIXELS] = {0};
 ssd1306_t oled;
@@ -77,13 +79,12 @@ static inline uint32_t rgb_to_grb(uint8_t r, uint8_t g, uint8_t b) {
     return (g << 24) | (r << 16) | (b << 8);
 }
 
-// Atualiza buffer de LEDs com padrão atual
+// Atualiza buffer de LEDs com quantidade atual
 void update_leds() {
-    const uint8_t *current_pattern = number_patterns[med_count];
-    for(uint8_t logical_i = 0; logical_i < NUM_PIXELS; logical_i++) {
-        uint8_t physical_i = LED_MAP[logical_i];
-        led_buffer[physical_i] = current_pattern[logical_i] ? 
-            rgb_to_grb(BRIGHTNESS, BRIGHTNESS, BRIGHTNESS) : 0;
+    memset(led_buffer, 0, sizeof(led_buffer));
+    for(uint8_t i = 0; i < led_count; i++) {
+        uint8_t physical_i = LED_MAP[i];
+        led_buffer[physical_i] = rgb_to_grb(BRIGHTNESS, BRIGHTNESS, BRIGHTNESS);
     }
 }
 
@@ -102,8 +103,26 @@ void button_isr(uint gpio, uint32_t events) {
     
     last_isr_time = now;
     
-    if(gpio == BUTTON_A && med_count > 0) med_count--;
-    if(gpio == BUTTON_B && med_count < 24) med_count++;  // 25 padrões (0-24)
+    if(gpio == BUTTON_A && led_count > 0) {
+        led_count--;
+    }
+    if(gpio == BUTTON_B && led_count < NUM_PIXELS) {
+        led_count++;
+        
+        // Verifica correspondência com padrão numérico
+        bool matches = true;
+        for(uint8_t i = 0; i < led_count; i++) {
+            uint8_t physical_i = LED_MAP[i];
+            if(number_patterns[led_count][physical_i] != 1) {
+                matches = false;
+                break;
+            }
+        }
+        
+        if(matches) {
+            med_count++;
+        }
+    }
     
     update_leds();
 }
@@ -170,11 +189,10 @@ int main() {
     while(true) {
         send_leds();
         
-        // Atualiza display a cada 500ms
         static uint32_t last_update = 0;
         if(absolute_time_diff_us(last_update, get_absolute_time()) > 500000) {
             char status[32];
-            snprintf(status, sizeof(status), "Medicamentos: %02d", med_count + 1);  // Mostra 1-25
+            snprintf(status, sizeof(status), "Medicamento %03d", med_count);
             
             ssd1306_fill(&oled, false);
             ssd1306_draw_string(&oled, "SmartMedBox", 0, 0);
