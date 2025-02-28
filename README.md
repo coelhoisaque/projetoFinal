@@ -1,4 +1,3 @@
-
 # SmartMedBox
 
 Sistema de lembrete de medicação com Raspberry Pi Pico, display OLED e alarme sonoro.
@@ -11,17 +10,11 @@ Sistema de lembrete de medicação com Raspberry Pi Pico, display OLED e alarme 
 <!-- - Interface em tempo real com RTC simulado -->
 
 ## Hardware Necessário
-- Raspberry Pi Pico
-- Display OLED SSD1306 (I2C)
-- LED WS2812 (25 pixels)
-- Buzzer passivo
-- 2 botões táteis
-- Resistores de pull-up (para botões)
-
+- BitDogLab
 ## Conexões
 | Componente       | Pino Pico |
 |------------------|-----------|
-| LEDs WS2812       | GP7       |
+| LEDs WS2812      | GP7       |
 | Botão A          | GP5       |
 | Botão B          | GP6       |
 
