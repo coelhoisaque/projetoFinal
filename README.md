@@ -22,11 +22,9 @@ Sistema de lembrete de medicação com Raspberry Pi Pico, display OLED e alarme 
 | Componente       | Pino Pico |
 |------------------|-----------|
 | LEDs WS2812       | GP7       |
-| Buzzer           | GP21      |
 | Botão A          | GP5       |
 | Botão B          | GP6       |
-| OLED SDA         | GP14      |
-| OLED SCL         | GP15      |
+
 
 ## Dependências
 - SDK Raspberry Pi Pico
